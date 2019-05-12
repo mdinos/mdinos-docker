@@ -38,31 +38,31 @@ class FileNameEndpoint(TestCase):
     def test_with_partially_matching_user_name(self):
         result = self.app.get('/api/file', query_string=dict(user='woofythedo', date='2019-04-24'))
         self.assertEqual(result.status_code, 404)
-        self.assertEqual(result.get_json(), {'error': 'No files found - please check your date format YYYY-MM-DD and username.'})
+        self.assertEqual(result.get_json(), {'error': 'No files found - there may be no data to retrieve. Please check your date format YYYY-MM-DD and username.'})
 
     def test_with_too_long_username(self):
         result = self.app.get('/api/file', query_string=dict(user='woofythedog/', date='2019-04-24'))
         self.assertEqual(result.status_code, 404)
-        self.assertEqual(result.get_json(), {'error': 'No files found - please check your date format YYYY-MM-DD and username.'})
+        self.assertEqual(result.get_json(), {'error': 'No files found - there may be no data to retrieve. Please check your date format YYYY-MM-DD and username.'})
 
     def test_with_no_input(self):
         result = self.app.get('/api/file')
-        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.status_code, 400)
         self.assertEqual(result.get_json(), {'error': 'Invalid input, `user` of type string and `date` in format YYYY-MM-DD'})
     
     def test_with_empty_input(self):
         result = self.app.get('/api/file', query_string=dict(user='', date=''))
-        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.status_code, 400)
         self.assertEqual(result.get_json(), {'error': 'Invalid input, `user` of type string and `date` in format YYYY-MM-DD'})
 
     def test_with_single_letter_from_name(self):
         result = self.app.get('/api/file', query_string=dict(user='o', date='2019-04-24'))
         self.assertEqual(result.status_code, 404)
-        self.assertEqual(result.get_json(), {'error': 'No files found - please check your date format YYYY-MM-DD and username.'})
+        self.assertEqual(result.get_json(), {'error': 'No files found - there may be no data to retrieve. Please check your date format YYYY-MM-DD and username.'})
     
     def test_with_partial_date(self):
         result = self.app.get('/api/file', query_string=dict(user='woofythedog', date='2019-04'))
-        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.status_code, 400)
         self.assertEqual(result.get_json(), {'error': 'Invalid input, `user` of type string and `date` in format YYYY-MM-DD'})
 
 class GetDataEndpoint(TestCase):
@@ -73,10 +73,26 @@ class GetDataEndpoint(TestCase):
             self.test_data = json.load(d)
         with open('/tmp/current.json', 'w+') as tmp:
             json.dump(self.test_data, tmp)
-        rs_api.s3r.meta.client.download_file = MagicMock(return_value=self.test_data)
 
     def test_with_good_input(self):
-        result = self.app.get('/api/data', query_string=dict(filekey='test-data/woofythedog_2019-04-13_stats.json'))
-        rs_api.s3r.meta.client.download_file.assert_called_with('rs-tracker-lambda', 'test-data/woofythedog_2019-04-13_stats.json', '/tmp/current.json')
+        rs_api.s3r.meta.client.download_file = MagicMock(return_value=self.test_data)
+        result = self.app.get('/api/data', query_string=dict(filekey='woofythedog/woofythedog_2019-04-14T00:22:47_stats.json'))
+        rs_api.s3r.meta.client.download_file.assert_called_with('rs-tracker-lambda', 'woofythedog/woofythedog_2019-04-14T00:22:47_stats.json', '/tmp/current.json')
         self.assertEqual(result.get_json(), self.test_data)
+        self.assertEqual(result.status_code, 200)
+    
+    def test_with_no_input(self):
+        result = self.app.get('/api/data')
+        self.assertEqual(result.get_json(), {'error': 'Invalid or no input. Please check your filename is valid.'})
+        self.assertEqual(result.status_code, 400)
+    
+    def test_with_bad_input(self):
+        result = self.app.get('/api/data', query_string=dict(filekey='woofythedog/woofythedog_2019-04-14T00:22:47_stats.jso'))
+        self.assertEqual(result.get_json(), {'error': 'Your file was not found - please check your file name.'})
+        self.assertEqual(result.status_code, 404)
+
+    def test_with_empty_input(self):
+        result = self.app.get('/api/data', query_string=dict(filekey=''))
+        self.assertEqual(result.get_json(), {'error': 'Your file was not found - please check your file name.'})
+        self.assertEqual(result.status_code, 404)
         
