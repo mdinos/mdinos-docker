@@ -20,19 +20,36 @@ def healthcheck():
 
 @app.route('/api/file', methods=['GET'])
 def file_name():
-	user = request.args.get('user')
-	date = request.args.get('date')
-	if user and date:
-		try:
-			file_list = s3c.list_objects_v2(Bucket = bucket_name)
-			file_list = file_list['Contents']
-			file = [file for file in file_list
-				if user and date in file['Key']]
-			return make_response(jsonify(file[0]['Key']), 200)
-		except:
-			return not_found()
-	else:
-		return not_found()
+	try:
+		user = request.args.get('user')
+		date = request.args.get('date')
+		username_length = len(user)
+		date_length = len(date)
+	except Exception as e:
+		return not_found('Invalid input, `user` of type string and `date` in format YYYY-MM-DD')
+	
+	if not user \
+		or not date \
+		or username_length > 12 \
+		or username_length < 1 \
+		or date_length != 10:
+		return not_found('Invalid input, `user` of type string and `date` in format YYYY-MM-DD')
+
+	try:
+		file_list = s3c.list_objects_v2(Bucket = bucket_name)
+		file_list = [file for file in file_list['Contents']
+			if date in file['Key']
+			and file['Key'][0:username_length] == user 
+			and file['Key'][username_length:username_length+1] == '/']
+		if len(file_list) > 1:
+			return not_found('Ambiguous files found - you may have provided an incorrect date format YYYY-MM-DD')
+		elif len(file_list) < 1:
+			return not_found('No files found - please check your date format YYYY-MM-DD and username.')
+		else:
+			log.debug('STATUS:200, FILENAME: {}'.format(file_list[0]['Key']))
+			return make_response(jsonify(file_list[0]['Key']), 200)
+	except Exception as e:
+		return not_found(e)
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
@@ -40,11 +57,12 @@ def get_data():
 	s3r.meta.client.download_file(bucket_name, file_key, '/tmp/current.json')
 	with open('/tmp/current.json', 'r') as stats:
 		stats_file = json.load(stats)
-	return make_response(json.dumps(stats_file), 200)
+	return make_response(jsonify(stats_file), 200)
 
 @app.errorhandler(404)
 def not_found(error='Something went wrong.'):
+	log.debug(str(error))
 	return make_response(jsonify({'error': error}), 404)
 
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0', port=80)
+	app.run(debug=True, host='0.0.0.0', port=5000)
