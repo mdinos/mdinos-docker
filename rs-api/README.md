@@ -29,4 +29,13 @@ python rs_api.py
 curl -G http://0.0.0.0:5000/api/healthcheck
 ```
 
-or build and run the docker container.
+or build and run the docker container like so:
+
+```
+ docker build -t rs_api:latest .
+
+```
+
+```
+docker run -d -p 5000:5000 rs_api:latest
+```
