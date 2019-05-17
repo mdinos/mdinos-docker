@@ -3,13 +3,16 @@ import logging
 import boto3
 import botocore
 import json
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 log = logging.getLogger('rs_api')
 log.setLevel(logging.DEBUG)
 
 s3c = boto3.client('s3')
 s3r = boto3.resource('s3')
+
 bucket_name = 'rs-tracker-lambda'
 
 @app.route('/api/healthcheck', methods=['GET'])
