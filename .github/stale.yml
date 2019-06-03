@@ -1,7 +1,7 @@
 --- 
 closeComment: false
 daysUntilClose: 1
-daysUntilStale: 0.05
+daysUntilStale: 1
 exemptLabels: 
   - "dont auto close"
 markComment: "This is being considered for automated deletion, it will be deleted in 1 day of no activity\n"
