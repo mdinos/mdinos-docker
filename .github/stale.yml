@@ -1,26 +1,8 @@
-pulls:
-  daysUntilStale: 1
-  daysUntilClose: 1
-  exemptLabels:
-    - don't auto remove
-  staleLabel: stale
-  markComment: >
-    This pull request has been automatically marked as stale because it has not had
-    recent activity. It will be closed if no further activity occurs. Thank you
-    for your contributions.
-  closeComment: true
-  markComment: >
-    This pull request will now be closed.
-issues:
-  daysUntilStale: 1
-  daysUntilClose: 1
-  exemptLabels:
-    - "don't auto remove"
-  staleLabel: stale
-  markComment: >
-    This issue has been automatically marked as stale because it has not had
-    recent activity. It will be closed if no further activity occurs. Thank you
-    for your contributions.
-  closeComment: true
-  markComment: >
-    This issue will now be closed.
+--- 
+closeComment: false
+daysUntilClose: 1
+daysUntilStale: 0.05
+exemptLabels: 
+  - "dont auto close"
+markComment: "This is being considered for automated deletion, it will be deleted in 1 day of no activity\n"
+staleLabel: stale
