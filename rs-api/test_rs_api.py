@@ -12,7 +12,7 @@ class HealthCheckEndpoint(TestCase):
 
     def test_api_functional(self):
         with self.app:
-            result = self.app.get("/api/healthcheck")
+            result = self.app.get("/ping")
             self.assertEqual(result.status_code, 200)
             self.assertEqual(result.data, b'{"ok":true}\n')
 
@@ -33,7 +33,7 @@ class FileNameEndpoint(TestCase):
 
     def test_with_good_input(self):
         result = self.app.get(
-            "/api/file", query_string=dict(user="woofythedog", date="2019-04-24")
+            "/file", query_string=dict(user="woofythedog", date="2019-04-24")
         )
         self.assertEqual(result.status_code, 200)
         self.assertEqual(
@@ -43,7 +43,7 @@ class FileNameEndpoint(TestCase):
 
     def test_with_partially_matching_user_name(self):
         result = self.app.get(
-            "/api/file", query_string=dict(user="woofythedo", date="2019-04-24")
+            "/file", query_string=dict(user="woofythedo", date="2019-04-24")
         )
         self.assertEqual(result.status_code, 404)
         self.assertEqual(
@@ -55,7 +55,7 @@ class FileNameEndpoint(TestCase):
 
     def test_with_too_long_username(self):
         result = self.app.get(
-            "/api/file", query_string=dict(user="woofythedog/", date="2019-04-24")
+            "/file", query_string=dict(user="woofythedog/", date="2019-04-24")
         )
         self.assertEqual(result.status_code, 404)
         self.assertEqual(
@@ -66,7 +66,7 @@ class FileNameEndpoint(TestCase):
         )
 
     def test_with_no_input(self):
-        result = self.app.get("/api/file")
+        result = self.app.get("/file")
         self.assertEqual(result.status_code, 400)
         self.assertEqual(
             result.get_json(),
@@ -76,7 +76,7 @@ class FileNameEndpoint(TestCase):
         )
 
     def test_with_empty_input(self):
-        result = self.app.get("/api/file", query_string=dict(user="", date=""))
+        result = self.app.get("/file", query_string=dict(user="", date=""))
         self.assertEqual(result.status_code, 400)
         self.assertEqual(
             result.get_json(),
@@ -87,7 +87,7 @@ class FileNameEndpoint(TestCase):
 
     def test_with_single_letter_from_name(self):
         result = self.app.get(
-            "/api/file", query_string=dict(user="o", date="2019-04-24")
+            "/file", query_string=dict(user="o", date="2019-04-24")
         )
         self.assertEqual(result.status_code, 404)
         self.assertEqual(
@@ -99,7 +99,7 @@ class FileNameEndpoint(TestCase):
 
     def test_with_partial_date(self):
         result = self.app.get(
-            "/api/file", query_string=dict(user="woofythedog", date="2019-04")
+            "/file", query_string=dict(user="woofythedog", date="2019-04")
         )
         self.assertEqual(result.status_code, 400)
         self.assertEqual(
@@ -122,7 +122,7 @@ class GetDataEndpoint(TestCase):
     def test_with_good_input(self):
         rs_api.s3r.meta.client.download_file = MagicMock(return_value=self.test_data)
         result = self.app.get(
-            "/api/data",
+            "/data",
             query_string=dict(
                 filekey="woofythedog/woofythedog_2019-04-14T00:22:47_stats.json"
             ),
@@ -136,7 +136,7 @@ class GetDataEndpoint(TestCase):
         self.assertEqual(result.status_code, 200)
 
     def test_with_no_input(self):
-        result = self.app.get("/api/data")
+        result = self.app.get("/data")
         self.assertEqual(
             result.get_json(),
             {"error": "Invalid or no input. Please check your filename is valid."},
@@ -145,7 +145,7 @@ class GetDataEndpoint(TestCase):
 
     def test_with_bad_input(self):
         result = self.app.get(
-            "/api/data",
+            "/data",
             query_string=dict(
                 filekey="woofythedog/woofythedog_2019-04-14T00:22:47_stats.jso"
             ),
@@ -157,7 +157,7 @@ class GetDataEndpoint(TestCase):
         self.assertEqual(result.status_code, 404)
 
     def test_with_empty_input(self):
-        result = self.app.get("/api/data", query_string=dict(filekey=""))
+        result = self.app.get("/data", query_string=dict(filekey=""))
         self.assertEqual(
             result.get_json(),
             {"error": "Your file was not found - please check your file name."},

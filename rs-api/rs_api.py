@@ -15,13 +15,13 @@ s3r = boto3.resource('s3')
 
 bucket_name = 'rs-tracker-lambda'
 
-@app.route('/api/healthcheck', methods=['GET'])
-def healthcheck():
+@app.route('/ping', methods=['GET'])
+def ping():
 	response = make_response(jsonify({'ok': True}), 200)
 	log.debug('STATUS:200, ACTION: {}'.format('HEALTHCHECK'))
 	return response
 
-@app.route('/api/file', methods=['GET'])
+@app.route('/file', methods=['GET'])
 def file_name():
 	try:
 		user = request.args.get('user')
@@ -54,7 +54,7 @@ def file_name():
 	except Exception as e:
 		return not_found(e)
 
-@app.route('/api/data', methods=['GET'])
+@app.route('/data', methods=['GET'])
 def get_data():
 	file_key = request.args.get('filekey')
 	if file_key != None:
@@ -80,4 +80,4 @@ def bad_request(error='Something went wrong - bad request.'):
 	return make_response(jsonify({'error': error}), 400)
 
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0', port=5000)
+	app.run(debug=True, host='0.0.0.0', port=3000)
