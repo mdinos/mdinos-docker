@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-from flask import Flask, jsonify, make_response, request
 import logging
 import boto3
 import botocore
 import json
-from flask_cors import CORS
+import os
 
+from flask import Flask, jsonify, make_response, request
+from requests import get
+from flask_cors import CORS
 from helpers import sanitise_user_input
 
 app = Flask(__name__)
@@ -17,6 +19,7 @@ s3c = boto3.client('s3')
 s3r = boto3.resource('s3')
 
 bucket_name = 'rs-tracker-lambda'
+rs_hiscores_endpoint = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player='
 
 @app.route('/api', methods=['GET'])
 def root():
@@ -72,7 +75,7 @@ def get_data():
 	if file_key != None:
 		try:
 			s3r.meta.client.download_file(bucket_name, file_key, '/tmp/current.json')
-		except Exception as e:
+		except:
 			return not_found('Your file was not found - please check your file name.')
 	else:
 		return bad_request('Invalid or no input. Please check your filename is valid.')
@@ -83,8 +86,8 @@ def get_data():
 
 @app.route('/api/newtrackingrequest', methods=['PUT'])
 def new_user_to_track():
-	print('recieved request')
 	user = request.args.get('username')
+	app.logger.info('Tracking request recieved for {}'.format(user))
 	if not user:
 		return bad_request('Invalid input, query parameters `username` (string).')
 
@@ -93,17 +96,39 @@ def new_user_to_track():
 		return bad_request(reason)
 
 	try:
-		s3r.meta.client.download_file(bucket_name, 'users.py', 'users.py')
-		from users import users as ux
+		app.logger.debug('Attempting to validate username by hiscore lookup.')
+		app.logger.debug(rs_hiscores_endpoint + user)
+		res = get(rs_hiscores_endpoint + user)
+		if res.status_code != 200:
+			raise Exception('Username {} not found on RS hiscores.'.format(user))
+	except Exception as e:
+		return not_found(str(e))
+
+	try:
+		s3r.Object(bucket_name, 'users.json').download_file('/tmp/users.json')
+		with open('/tmp/users.json', 'r') as users_json:
+			ux = json.loads(users_json.read())
 	except:
 		return internal_error()
 
-	if user not in ux['track_rs_users']:
-		ux['track_rs_users'].append(user)
+	if user not in ux['users']:
+		ux['users'].append(user)
 	else:
 		return make_response(jsonify(dict(username=user, message='User already exists in database.')), 200)
+	
+	app.logger.debug(ux)
 
-	print(ux)
+	try:
+		app.logger.debug('Attempting to update s3 file.')
+		with open('/tmp/users.json', 'w') as users_json:
+			users_json.write(json.dumps(ux))
+		app.logger.debug('Written to local file.')
+		with open('/tmp/users.json', 'r') as users_json:
+			s3r.Object(bucket_name, 'users.json').upload_file('/tmp/users.json')
+	except:
+		return internal_error('[500] Something went wrong updating remote users file.')
+
+	os.remove('/tmp/users.json')
 
 	return make_response(jsonify(dict(username=user, message='User added to database')), 200)
 
