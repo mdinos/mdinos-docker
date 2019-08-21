@@ -7,7 +7,7 @@ import botocore
 import json
 from flask_cors import CORS
 
-from helpers import *
+from helpers import sanitise_user_input
 
 app = Flask(__name__)
 CORS(app)
@@ -17,6 +17,10 @@ s3c = boto3.client('s3')
 s3r = boto3.resource('s3')
 
 bucket_name = 'rs-tracker-lambda'
+
+@app.route('/api', methods=['GET'])
+def root():
+	return not_found()
 
 @app.route('/api/ping', methods=['GET'])
 def ping():
@@ -104,17 +108,19 @@ def new_user_to_track():
 	return make_response(jsonify(dict(username=user, message='User added to database')), 200)
 
 @app.errorhandler(500)
-def internal_error(error='500: Internal server error'):
+def internal_error(error='[500] Internal server error.'):
 	app.logger.error('STATUS:500, ERROR:' + error)
 	return make_response(jsonify({'error': error}), 500)
 
 @app.errorhandler(404)
-def not_found(error='Something went wrong - we didn\'t find what we were expecting.'):
+def not_found(error='[404] Something went wrong - we didn\'t find what we were expecting.'):
+	if len(str(error)) >= 100:
+		error = '[404] Something went wrong - we didn\'t find what we were expecting.'
 	app.logger.debug('STATUS:404, ERROR: "Document not found"')
 	return make_response(jsonify({'error': error}), 404)
 
 @app.errorhandler(400)
-def bad_request(error='Something went wrong - bad request.'):
+def bad_request(error='[400] Something went wrong - bad request.'):
 	app.logger.debug('STATUS:400, ERROR: {}'.format(str(error)))
 	return make_response(jsonify({'error': error}), 400)
 
