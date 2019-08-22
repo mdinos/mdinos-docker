@@ -3,6 +3,7 @@ from unittest import TestCase
 from mock import patch, MagicMock
 import json
 import requests
+import sys
 
 
 class HealthCheckEndpoint(TestCase):
@@ -163,3 +164,18 @@ class GetDataEndpoint(TestCase):
             {"error": "Your file was not found - please check your file name."},
         )
         self.assertEqual(result.status_code, 404)
+
+#class NewTrackingRequestEndpoint(TestCase):
+#
+#    def setUp(self):
+#        rs_api.app.testing = True
+#        self.app = rs_api.app.test_client()
+#        rs_api.s3r.Object = MagicMock()
+#        rs_api.os.remove = MagicMock()
+#        rs_api.open = MagicMock(name='this')
+#
+#    def test_add_existing_user(self):
+#        result = self.app.put('/api/newtrackingrequest', query_string=dict(username='woofythedog'))
+#        self.assertEqual(result.status_code, 400)
+#        self.assertEqual(result.get_json(), 
+#            {"error" : "User woofythedog already exists in the database."})

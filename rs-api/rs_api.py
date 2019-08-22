@@ -5,7 +5,6 @@ import boto3
 import botocore
 import json
 import os
-
 from flask import Flask, jsonify, make_response, request
 from requests import get
 from flask_cors import CORS
@@ -19,7 +18,7 @@ s3c = boto3.client('s3')
 s3r = boto3.resource('s3')
 
 bucket_name = 'rs-tracker-lambda'
-rs_hiscores_endpoint = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player='
+runescape_hiscores_endpoint = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player='
 
 @app.route('/api', methods=['GET'])
 def root():
@@ -28,7 +27,7 @@ def root():
 @app.route('/api/ping', methods=['GET'])
 def ping():
 	response = make_response(jsonify({'ok': True}), 200)
-	app.logger.debug('STATUS:200, ACTION: {}'.format('HEALTHCHECK'))
+	app.logger.debug('STATUS:200, ACTION: {}'.format('ping'))
 	return response
 
 @app.route('/api/file', methods=['GET'])
@@ -95,41 +94,37 @@ def new_user_to_track():
 	if not is_valid:
 		return bad_request(reason)
 
-	try:
-		app.logger.debug('Attempting to validate username by hiscore lookup.')
-		app.logger.debug(rs_hiscores_endpoint + user)
-		res = get(rs_hiscores_endpoint + user)
-		if res.status_code != 200:
-			raise Exception('Username {} not found on RS hiscores.'.format(user))
-	except Exception as e:
-		return not_found(str(e))
+	rs_api_response = get(runescape_hiscores_endpoint + user, timeout=10)
+	if rs_api_response.status_code != 200:
+		return bad_request('Bad request: User not found on RS hiscores.')
 
 	try:
 		s3r.Object(bucket_name, 'users.json').download_file('/tmp/users.json')
 		with open('/tmp/users.json', 'r') as users_json:
 			ux = json.loads(users_json.read())
-	except:
+		app.logger.debug('imported {}'.format(ux))
+	except Exception as e:
+		app.logger.debug('[500] Internal server error: ')
+		app.logger.debug(e)
 		return internal_error()
 
 	if user not in ux['users']:
 		ux['users'].append(user)
 	else:
-		return make_response(jsonify(dict(username=user, message='User already exists in database.')), 200)
-	
-	app.logger.debug(ux)
+		app.logger.debug('Returning user {} exists'.format(user))
+		return bad_request('User {} already exists in the database.'.format(user))
 
 	try:
-		app.logger.debug('Attempting to update s3 file.')
-		with open('/tmp/users.json', 'w') as users_json:
-			users_json.write(json.dumps(ux))
-		app.logger.debug('Written to local file.')
-		with open('/tmp/users.json', 'r') as users_json:
-			s3r.Object(bucket_name, 'users.json').upload_file('/tmp/users.json')
-	except:
-		return internal_error('[500] Something went wrong updating remote users file.')
+		with open('/tmp/users.json', 'w') as users_file:
+			users_file.write(json.dumps(ux, indent=4))
+		s3r.Object(bucket_name, 'users.json').upload_file('/tmp/users.json')
+		os.remove('/tmp/users.json')
+	except Exception as e:
+		app.logger.error('[500] Error: ')
+		app.logger.error(e)
+		return internal_error('[500] Something went wrong updating remote users file.') 
 
-	os.remove('/tmp/users.json')
-
+	app.logger.info('Added user {} to tracking list.'.format(user))
 	return make_response(jsonify(dict(username=user, message='User added to database')), 200)
 
 @app.errorhandler(500)
@@ -139,10 +134,10 @@ def internal_error(error='[500] Internal server error.'):
 
 @app.errorhandler(404)
 def not_found(error='[404] Something went wrong - we didn\'t find what we were expecting.'):
-	if len(str(error)) >= 100:
+	if len(str(error)) >= 120:
 		error = '[404] Something went wrong - we didn\'t find what we were expecting.'
 	app.logger.debug('STATUS:404, ERROR: "Document not found"')
-	return make_response(jsonify({'error': error}), 404)
+	return make_response(jsonify({'error': str(error)}), 404)
 
 @app.errorhandler(400)
 def bad_request(error='[400] Something went wrong - bad request.'):
