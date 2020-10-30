@@ -1,0 +1,106 @@
+/* Styling for index/signup/signin pages
+    colors from https://visme.co/blog/website-color-schemes/
+*/
+
+/* General page styling and layout */
+body {
+    background-color: #272727;
+    font-family: 'Oswald', sans-serif;
+}
+
+.parent {
+    display: grid;
+    max-width: 70em;
+    margin-left: auto;
+    margin-right: auto;
+    place-content: center;
+    grid-template-columns: repeat(2, 1.5fr) 2fr;
+    grid-template-rows: 10em 1fr 10em;
+    grid-column-gap: 2em;
+    grid-row-gap: 5px;
+}
+.headerLeft {
+    grid-area: 1 / 1 / 2 / 2;
+    place-self: center;
+}
+.headerCentre {
+    grid-area: 1 / 2 / 2 / 3;
+    place-self: center;
+}
+.headerRight {
+    grid-area: 1 / 3 / 2 / 4;
+    place-self: center;
+}
+.contentLeft {
+    grid-area: 2 / 1 / 3 / 2;
+    place-self:center;
+}
+.contentCentre {
+    padding: 1em;
+    grid-area: 2 / 2 / 3 / 3;
+    place-self: center;
+}
+.contentRight {
+    grid-area: 2 / 3 / 3 / 4;
+    place-self: left;
+}
+.footerLeft {
+    grid-area: 3 / 1 / 4 / 2;
+    place-self: left;
+}
+.footerCentre {
+    grid-area: 3 / 2 / 4 / 3;
+    place-self: left;
+}
+.footerRight {
+    grid-area: 3 / 3 / 4 / 4;
+    place-self: left;
+}
+
+/* Text styling */
+
+h1 {
+    place-self: center;
+    text-align: center;
+    color: #14A76C;
+    font-size: 3em;
+}
+
+.link:hover {
+    color: #FFE400;
+}
+
+h3 {
+    color: #FF652F;
+    font-size: 2em;
+    display: inline-block;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+h3:hover {
+    color: #FFE400;
+}
+
+h4 {
+    color: #14A76C;
+    font-size: 1.5em;
+}
+
+label {
+    font-family: 'Raleway', sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+h4 > a {
+    text-decoration: none;
+}
+
+/* Forgetting password style */
+a.forgottenlink {
+    font-family: 'Raleway', sans-serif;
+    color: dimgray;
+}
