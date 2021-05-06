@@ -3,4 +3,4 @@ botocore==1.12.142
 mock==2.0.0
 requests==2.20.0
 boto3==1.4.4
-flask_cors==3.0.7
+flask_cors==3.0.9
